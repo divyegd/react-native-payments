@@ -12,7 +12,7 @@
 
 @implementation PKPaymentButtonManager
 
-RCT_EXPORT_MODULE(PKPaymentButton)
+RCT_EXPORT_MODULE()
 
 RCT_EXPORT_VIEW_PROPERTY(onPress, RCTBubblingEventBlock)
 
