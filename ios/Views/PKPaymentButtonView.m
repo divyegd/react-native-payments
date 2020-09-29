@@ -10,17 +10,19 @@
 
 NSString * const DEFAULT_BUTTON_TYPE = @"plain";
 NSString * const DEFAULT_BUTTON_STYLE = @"black";
+CGFloat const DEFAULT_CORNER_RADIUS = 4.0;
 
 @implementation PKPaymentButtonView
 
 @synthesize buttonType = _buttonType;
 @synthesize buttonStyle = _buttonStyle;
+@synthesize cornerRadius = _cornerRadius;
 @synthesize button = _button;
 
 - (instancetype) init {
   self = [super init];
   
-  [self setButtonType:DEFAULT_BUTTON_TYPE andStyle:DEFAULT_BUTTON_STYLE];
+  [self setButtonType:DEFAULT_BUTTON_TYPE andStyle:DEFAULT_BUTTON_STYLE withRadius:DEFAULT_CORNER_RADIUS];
   
   return self;
 }
@@ -35,10 +37,18 @@ NSString * const DEFAULT_BUTTON_STYLE = @"black";
 
 - (void)setButtonStyle:(NSString *) value {
   if (_buttonStyle != value) {
-    [self setButtonType:_buttonType andStyle:value];
+    [self setButtonType:_buttonType andStyle:value withRadius:_cornerRadius];
   }
   
   _buttonStyle = value;
+}
+
+- (void)setCornerRadius:(CGFloat) value {
+  if(_cornerRadius != value) {
+    [self setButtonType:_buttonType andStyle:_buttonStyle withRadius:value];
+  }
+
+  _cornerRadius = value;
 }
 
 /**
@@ -46,14 +56,14 @@ NSString * const DEFAULT_BUTTON_STYLE = @"black";
  * unmount existint button and create new one whenever it's style and/or
  * type is changed.
  */
-- (void)setButtonType:(NSString *) buttonType andStyle:(NSString *) buttonStyle {
+- (void)setButtonType:(NSString *) buttonType andStyle:(NSString *) buttonStyle withRadius:(CGFloat) cornerRadius {
   for (UIView *view in self.subviews) {
     [view removeFromSuperview];
   }
 
   PKPaymentButtonType type;
   PKPaymentButtonStyle style;
-  
+
   if ([buttonType isEqualToString: @"buy"]) {
     type = PKPaymentButtonTypeBuy;
   } else if ([buttonType isEqualToString: @"setUp"]) {
@@ -76,7 +86,10 @@ NSString * const DEFAULT_BUTTON_STYLE = @"black";
 
   _button = [[PKPaymentButton alloc] initWithPaymentButtonType:type paymentButtonStyle:style];
   [_button addTarget:self action:@selector(touchUpInside:) forControlEvents:UIControlEventTouchUpInside];
-  
+
+  _button.layer.cornerRadius = cornerRadius;
+  _button.layer.masksToBounds = true;
+
   [self addSubview:_button];
 }
 

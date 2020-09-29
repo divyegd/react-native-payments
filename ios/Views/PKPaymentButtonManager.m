@@ -12,7 +12,7 @@
 
 @implementation PKPaymentButtonManager
 
-RCT_EXPORT_MODULE()
+RCT_EXPORT_MODULE(PKPaymentButton)
 
 RCT_EXPORT_VIEW_PROPERTY(onPress, RCTBubblingEventBlock)
 
@@ -27,6 +27,13 @@ RCT_CUSTOM_VIEW_PROPERTY(buttonStyle, NSString, PKPaymentButtonView)
 {
   if (json) {
     [view setButtonStyle:[RCTConvert NSString:json]];
+  }
+}
+
+RCT_CUSTOM_VIEW_PROPERTY(cornerRadius, CGFloat, PKPaymentButtonView)
+{
+  if (json) {
+    [view setCornerRadius:[RCTConvert CGFloat:json]];
   }
 }
 
