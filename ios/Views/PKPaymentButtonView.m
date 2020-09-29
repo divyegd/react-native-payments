@@ -29,7 +29,7 @@ CGFloat const DEFAULT_CORNER_RADIUS = 4.0;
 
 - (void)setButtonType:(NSString *) value {
   if (_buttonType != value) {
-    [self setButtonType:value andStyle:_buttonStyle];
+    [self setButtonType:value andStyle:_buttonStyle withRadius:_cornerRadius];
   }
   
   _buttonType = value;
