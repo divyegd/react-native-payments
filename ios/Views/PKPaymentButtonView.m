@@ -85,10 +85,10 @@ CGFloat const DEFAULT_CORNER_RADIUS = 4.0;
   }
 
   _button = [[PKPaymentButton alloc] initWithPaymentButtonType:type paymentButtonStyle:style];
+  if (@available(iOS 12, *)) {
+    [_button setCornerRadius:cornerRadius];
+  }
   [_button addTarget:self action:@selector(touchUpInside:) forControlEvents:UIControlEventTouchUpInside];
-
-  _button.layer.cornerRadius = cornerRadius;
-  _button.layer.masksToBounds = true;
 
   [self addSubview:_button];
 }
