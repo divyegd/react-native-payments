@@ -41,6 +41,7 @@ RCT_EXPORT_METHOD(createPaymentRequest: (NSDictionary *)methodData
     self.paymentRequest.shippingMethods = [self getShippingMethodsFromDetails:details];
     
     [self setRequiredShippingAddressFieldsFromOptions:options];
+    [self setRequiredBillingContactFieldsFromOptions:options];
     
     // Set options so that we can later access it.
     self.initialOptions = options;
@@ -69,12 +70,43 @@ RCT_EXPORT_METHOD(abort: (RCTResponseSenderBlock)callback)
 }
 
 RCT_EXPORT_METHOD(complete: (NSString *)paymentStatus
+                  error: (NSDictionary *)error
                   callback: (RCTResponseSenderBlock)callback)
 {
     if ([paymentStatus isEqualToString: @"success"]) {
-        self.completion(PKPaymentAuthorizationStatusSuccess);
+        self.completion([[PKPaymentAuthorizationResult alloc] initWithStatus:PKPaymentAuthorizationStatusSuccess errors:nil]);
     } else {
-        self.completion(PKPaymentAuthorizationStatusFailure);
+        NSMutableArray *myArray = [[NSMutableArray alloc] init];
+        if([error[@"type"] isEqualToString: @"billingAddressInvalid"]){
+            [myArray addObject:[PKPaymentRequest
+                                paymentBillingAddressInvalidErrorWithKey:error[@"fieldName"]
+                                localizedDescription:error[@"message"]]];
+        }
+        
+        if([error[@"type"] isEqualToString: @"contactInvalid"]){
+            [myArray addObject:[PKPaymentRequest
+                                paymentContactInvalidErrorWithContactField:error[@"fieldName"]
+                                localizedDescription:error[@"message"]]];
+        }
+        
+        if([error[@"type"] isEqualToString: @"shippingAddressInvalid"]){
+            [myArray addObject:[PKPaymentRequest
+                                paymentBillingAddressInvalidErrorWithKey:error[@"fieldName"]
+                                localizedDescription:error[@"message"]]];
+        }
+        
+        if([error[@"type"] isEqualToString: @"shippingAddressInvalid"]){
+            [myArray addObject:[PKPaymentRequest
+                                paymentShippingAddressInvalidErrorWithKey:error[@"fieldName"]
+                                localizedDescription:error[@"message"]]];
+        }
+        
+        if([error[@"type"] isEqualToString: @"shippingAddressUnserviciable"]){
+            [myArray addObject:[PKPaymentRequest
+                                paymentShippingAddressUnserviceableErrorWithLocalizedDescription:error[@"message"]]];
+        }
+        
+        self.completion([[PKPaymentAuthorizationResult alloc] initWithStatus:PKPaymentAuthorizationStatusFailure errors:myArray]);
     }
     
     callback(@[[NSNull null]]);
@@ -142,14 +174,13 @@ RCT_EXPORT_METHOD(handleDetailsUpdate: (NSDictionary *)details
 // ---------------
 - (void) paymentAuthorizationViewController:(PKPaymentAuthorizationViewController *)controller
                         didAuthorizePayment:(PKPayment *)payment
-                                 completion:(void (^)(PKPaymentAuthorizationStatus))completion
+                                 handler:(void (^)(PKPaymentAuthorizationResult *))completion
 {
     // Store completion for later use
     self.completion = completion;
     
     [self handleUserAccept:payment paymentToken:nil];
 }
-
 
 // Shipping Contact
 - (void) paymentAuthorizationViewController:(PKPaymentAuthorizationViewController *)controller
@@ -300,22 +331,84 @@ RCT_EXPORT_METHOD(handleDetailsUpdate: (NSDictionary *)details
 
 - (void)setRequiredShippingAddressFieldsFromOptions:(NSDictionary *_Nonnull)options
 {
-    // Request Shipping
-    if (options[@"requestShipping"]) {
-        self.paymentRequest.requiredShippingAddressFields = PKAddressFieldPostalAddress;
+    if (@available(iOS 11.0, *)) {
+        NSSet *setFields = [NSSet set];
+        if (options[@"requestShipping"]) {
+            setFields = [setFields setByAddingObject:PKContactFieldPostalAddress];
+        }
+        
+        if (options[@"requestPayerName"]) {
+            setFields = [setFields setByAddingObject:PKContactFieldName];
+        }
+        
+        if (options[@"requestPayerPhone"]) {
+            setFields = [setFields setByAddingObject:PKContactFieldPhoneNumber];
+        }
+        
+        if (options[@"requestPayerEmail"]) {
+            setFields = [setFields setByAddingObject:PKContactFieldEmailAddress];
+        }
+        
+        self.paymentRequest.requiredShippingContactFields = setFields;
+    } else {
+        // Request Shipping
+        if (options[@"requestShipping"]) {
+            self.paymentRequest.requiredShippingAddressFields = PKAddressFieldPostalAddress;
+        }
+        
+        if (options[@"requestPayerName"]) {
+            self.paymentRequest.requiredShippingAddressFields = self.paymentRequest.requiredShippingAddressFields | PKAddressFieldName;
+        }
+        
+        if (options[@"requestPayerPhone"]) {
+            self.paymentRequest.requiredShippingAddressFields = self.paymentRequest.requiredShippingAddressFields | PKAddressFieldPhone;
+        }
+        
+        if (options[@"requestPayerEmail"]) {
+            self.paymentRequest.requiredShippingAddressFields = self.paymentRequest.requiredShippingAddressFields | PKAddressFieldEmail;
+        }
+    }
+}
+
+- (void)setRequiredBillingContactFieldsFromOptions:(NSDictionary *_Nonnull)options
+{
+    if (@available(iOS 11.0, *)) {
+        NSSet *setFields = [NSSet set];
+        if (options[@"requestBilling"]) {
+            setFields = [setFields setByAddingObject:PKContactFieldPostalAddress];
+        }
+        
+        if (options[@"requestBillingName"]) {
+            setFields = [setFields setByAddingObject:PKContactFieldName];
+        }
+        
+        if (options[@"requestBillingPhone"]) {
+            setFields = [setFields setByAddingObject:PKContactFieldPhoneNumber];
+        }
+        
+        if (options[@"requestBillingEmail"]) {
+            setFields = [setFields setByAddingObject:PKContactFieldEmailAddress];
+        }
+        
+        self.paymentRequest.requiredBillingContactFields = setFields;
+    } else {
+        if (options[@"requestBilling"]) {
+            self.paymentRequest.requiredBillingAddressFields = PKAddressFieldPostalAddress;
+        }
+        
+        if (options[@"requestBillingName"]) {
+            self.paymentRequest.requiredBillingAddressFields = self.paymentRequest.requiredBillingAddressFields | PKAddressFieldName;
+        }
+        
+        if (options[@"requestBillingPhone"]) {
+            self.paymentRequest.requiredBillingAddressFields = self.paymentRequest.requiredBillingAddressFields | PKAddressFieldPhone;
+        }
+        
+        if (options[@"requestEmail"]) {
+            self.paymentRequest.requiredBillingAddressFields = self.paymentRequest.requiredBillingAddressFields | PKAddressFieldEmail;
+        }
     }
     
-    if (options[@"requestPayerName"]) {
-        self.paymentRequest.requiredShippingAddressFields = self.paymentRequest.requiredShippingAddressFields | PKAddressFieldName;
-    }
-    
-    if (options[@"requestPayerPhone"]) {
-        self.paymentRequest.requiredShippingAddressFields = self.paymentRequest.requiredShippingAddressFields | PKAddressFieldPhone;
-    }
-    
-    if (options[@"requestPayerEmail"]) {
-        self.paymentRequest.requiredShippingAddressFields = self.paymentRequest.requiredShippingAddressFields | PKAddressFieldEmail;
-    }
 }
 
 - (void)handleUserAccept:(PKPayment *_Nonnull)payment
@@ -351,6 +444,32 @@ RCT_EXPORT_METHOD(handleDetailsUpdate: (NSDictionary *)details
         }
 
         [paymentResponse setObject:shippingAddress forKey:@"shippingAddress"];
+    }
+    
+    PKContact *billingContact = payment.billingContact;
+    if(billingContact) {
+
+        NSMutableDictionary *billingAddress = [NSMutableDictionary new];
+        NSPersonNameComponents *presonNameComponent = billingContact.name;
+
+        if (presonNameComponent) {
+            [billingAddress setObject:presonNameComponent.namePrefix forKey:@"namePrefix"];
+            [billingAddress setObject:presonNameComponent.nameSuffix forKey:@"nameSuffix"];
+            [billingAddress setObject:presonNameComponent.givenName forKey:@"givenName"];
+            [billingAddress setObject:presonNameComponent.middleName forKey:@"middleName"];
+            [billingAddress setObject:presonNameComponent.nickname forKey:@"nickname"];
+            [billingAddress setObject:presonNameComponent.familyName forKey:@"familyName"];
+        }
+
+        CNPostalAddress *postalAddess = billingContact.postalAddress;
+        if (postalAddess) {
+            [billingAddress setObject:postalAddess.street forKey:@"street"];
+            [billingAddress setObject:postalAddess.city forKey:@"city"];
+            [billingAddress setObject:postalAddess.state forKey:@"state"];
+            [billingAddress setObject:postalAddess.postalCode forKey:@"postalCode"];
+        }
+
+        [paymentResponse setObject:billingAddress forKey:@"billingAddress"];
     }
 
     if (token) {
