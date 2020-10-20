@@ -441,6 +441,7 @@ RCT_EXPORT_METHOD(handleDetailsUpdate: (NSDictionary *)details
             [shippingAddress setObject:postalAddess.city forKey:@"city"];
             [shippingAddress setObject:postalAddess.state forKey:@"state"];
             [shippingAddress setObject:postalAddess.postalCode forKey:@"postalCode"];
+            [shippingAddress setObject:postalAddess.ISOCountryCode forKey:@"countryCode"];
         }
 
         [paymentResponse setObject:shippingAddress forKey:@"shippingAddress"];
@@ -467,6 +468,7 @@ RCT_EXPORT_METHOD(handleDetailsUpdate: (NSDictionary *)details
             [billingAddress setObject:postalAddess.city forKey:@"city"];
             [billingAddress setObject:postalAddess.state forKey:@"state"];
             [billingAddress setObject:postalAddess.postalCode forKey:@"postalCode"];
+            [billingAddress setObject:postalAddess.ISOCountryCode forKey:@"countryCode"];
         }
 
         [paymentResponse setObject:billingAddress forKey:@"billingAddress"];
